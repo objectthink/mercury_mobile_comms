@@ -42,7 +42,7 @@
 {
    if(self = [super init])
    {
-      subCommandId = 0x00000007;
+      self.subCommandId = 0x00000007;
       
       _filename = [NSString stringWithString:filename];
       _offset = offset;
@@ -66,7 +66,8 @@
    //uint filenameLength = [muFilename length];
    //uint length = 28;
    
-   [self.bytes appendBytes:&subCommandId length:4];
+   uint temp = self.subCommandId;
+   [self.bytes appendBytes:&temp length:4];
    
    //[self.bytes appendBytes:&filenameLength length:4];
    //[self.bytes appendData:muFilename];

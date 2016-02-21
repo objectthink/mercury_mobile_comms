@@ -151,7 +151,7 @@
 {
    [self.bytes setLength:0];
 
-   [self.bytes appendBytes:&subCommandId length:4];
+   [self.bytes appendBytes:&_subCommandId length:4];
 
    return self.bytes;
 }
@@ -183,7 +183,7 @@
 {
    if(self = [super init])
    {
-      subCommandId = MercuryStartProcedureCommandId;
+      self.subCommandId = MercuryStartProcedureCommandId;
    }
    return self;
 }
@@ -194,7 +194,7 @@
 {
    if(self = [super init])
    {
-      subCommandId = MercuryGetProcedureStatusCommandId;
+      self.subCommandId = MercuryGetProcedureStatusCommandId;
    }
    return self;
 }
@@ -205,7 +205,7 @@
 {
    if(self = [super init])
    {
-      subCommandId = MercuryGetDataFileStatusCommandId;
+      self.subCommandId = MercuryGetDataFileStatusCommandId;
    }
    return self;
 }
@@ -220,7 +220,7 @@
 {
    if(self = [super init])
    {
-      subCommandId = 0x0001000A;
+      self.subCommandId = 0x0001000A;
       
       signals = [[NSMutableArray alloc] init];
    }
@@ -233,7 +233,8 @@
    
    [self.bytes setLength:0];
    
-   [self.bytes appendBytes:&subCommandId length:4];
+   uint temp = self.subCommandId;
+   [self.bytes appendBytes:&temp length:4];
    
    for(NSNumber* signal in signals)
    {
@@ -255,7 +256,7 @@
 {
    if(self = [super init])
    {
-      subCommandId = 0x00000008;
+      self.subCommandId = 0x00000008;
    }
    return self;
 }
@@ -559,30 +560,36 @@
    if(type == get)
    {
       WaitEvent* event = [[WaitEvent alloc] initSignaled:NO];
-      
+
+      NSMutableDictionary* d = [[NSMutableDictionary alloc] init];
+
+      [d setObject:event forKey:@"Event"];
+
+      [_commandsInProgress setObject:d forKey:[NSNumber numberWithInt:_sequenceNumber]];
+
       dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
       dispatch_async(queue,
       ^{
-         NSMutableDictionary* d = [[NSMutableDictionary alloc] init];
+         //NSMutableDictionary* d = [[NSMutableDictionary alloc] init];
          
-         [d setObject:[[MercuryResponse alloc] init] forKey:@"Response"];
-         [d setObject:event forKey:@"Event"];
+         //[d setObject:[[MercuryResponse alloc] init] forKey:@"Response"];
+         //[d setObject:event forKey:@"Event"];
                         
-         [_commandsInProgress setObject:d forKey:[NSNumber numberWithInt:_sequenceNumber]];
+         //[_commandsInProgress setObject:d forKey:[NSNumber numberWithInt:_sequenceNumber]];
                         
          [self.socket writeData:message withTimeout:-1 tag:0];
          [self.socket readDataToData:[NSData dataWithBytes:"END " length:4] withTimeout:-1 tag:0];
-                        
+         
+         NSLog(@"SENDCOMMAND: ABOUT TO WAIT FOR RESPONSE: %d", _sequenceNumber);
+         
          [event waitForSignal];
                         
-                        
           _response = [d objectForKey:@"Response"];
-                        
-         [_commandsInProgress removeObjectForKey:[NSNumber numberWithInt:_sequenceNumber]];
-                        
+                                 
          if(completionBlock != nil)
             completionBlock(_response);
          
+         [_commandsInProgress removeObjectForKey:[NSNumber numberWithInt:_sequenceNumber]];
       });
    }
    else
@@ -693,6 +700,16 @@
          uint sequenceNumer = [self uintAtOffset:12 inData:data];
          uint errorCode = [self uintAtOffset:16 inData:data];
          
+         NSMutableDictionary* responseDictionary =
+         [_commandsInProgress objectForKey:[NSNumber numberWithInt:sequenceNumer]];
+         
+         if(responseDictionary != nil)
+         {
+            WaitEvent* event = [responseDictionary objectForKey:@"Event"];
+            
+            [event signal];
+         }
+         
          for (id<MercuryInstrumentDelegate> delegate in delegates)
          {
             [delegate nakWithSequenceNumber:sequenceNumer andError:errorCode];
@@ -720,7 +737,9 @@
                                   status:status];
          }
          
-         NSMutableDictionary* responseDictionary = [_commandsInProgress objectForKey:[NSNumber numberWithInt:sequenceNumber]];
+         NSMutableDictionary* responseDictionary =
+         [_commandsInProgress objectForKey:[NSNumber numberWithInt:sequenceNumber]];
+         
          if(responseDictionary != nil)
          {
             WaitEvent* event = [responseDictionary objectForKey:@"Event"];
@@ -729,6 +748,8 @@
             
             [responseDictionary setValue:response forKey:@"Response"];
            
+            NSLog(@"RSP: ABOUT TO SIGNAL: %d", sequenceNumber);
+            
             [event signal];
          }
       }

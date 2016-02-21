@@ -40,16 +40,20 @@ typedef enum
 
 @interface MercuryCommand : MercuryInstrumentItem
 {
-   uint subCommandId;
 }
+
+@property uint subCommandId;
+
 -(id)init;
 -(NSMutableData*)getBytes;
 @end
 
 @interface MercuryStatus : MercuryInstrumentItem
 {
-   uint subCommandId;
 }
+
+@property uint subCommandId;
+
 @end
 
 @interface MercuryAction : MercuryCommand

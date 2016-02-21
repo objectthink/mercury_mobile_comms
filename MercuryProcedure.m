@@ -523,7 +523,7 @@ static int uniqueTagStatic = 0;
 {
    if(self = [super init])
    {
-      subCommandId = MercuryGetProcedureCommandId;
+      self.subCommandId = MercuryGetProcedureCommandId;
    }
    return self;
 }
@@ -538,7 +538,8 @@ static int uniqueTagStatic = 0;
 {
    if(self = [super init])
    {
-      subCommandId = MercurySetProcedureCommandId;
+      self.subCommandId = MercurySetProcedureCommandId;
+      
       _segments = [[NSMutableArray alloc]init];
       _signals  = [[NSMutableArray alloc] init];
    }
