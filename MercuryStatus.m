@@ -47,5 +47,25 @@
    }
    return self;
 }
+@end
 
+@implementation MercuryRealTimeSignalsStatusResponse
+-(id)initWithMessage:(NSData *)message
+{
+   if(self = [super initWithMessage:message])
+   {
+      self.signals = [[NSMutableArray alloc] init];
+      
+      [self.signals removeAllObjects];
+      
+      long signalCount = [message length]/4;
+      for (int i = 1; i < signalCount -1; i++)
+      {
+         float signal = [self floatAtOffset:i*4 inData:message];
+         [self.signals addObject:[NSNumber numberWithFloat:signal]];
+      }
+   }
+   
+   return self;
+}
 @end

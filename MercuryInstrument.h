@@ -86,10 +86,6 @@ typedef enum
 -(id)init;
 @end
 
-@interface MercuryGetRealTimeSignalsResponse : MercuryResponse
--(id)init;
-@end
-
 @protocol MercuryInstrumentDelegate <NSObject>
 -(void)connected;
 -(void)accept:(MercuryAccess)access;

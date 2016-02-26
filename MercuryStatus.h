@@ -59,3 +59,9 @@ MercuryDataFileState;
 @property uint length;
 @property MercuryDataFileState state;
 @end
+
+@interface MercuryRealTimeSignalsStatusResponse : MercuryStatus
+
+@property NSMutableArray* signals;
+
+@end
