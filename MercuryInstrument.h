@@ -128,4 +128,5 @@ typedef enum
 -(void)addDelegate:(id<MercuryInstrumentDelegate>) delegate;
 -(void)removeDelegate:(id<MercuryInstrumentDelegate>) delegate;
 -(NSArray*)knownSignalNames;
+-(NSString*)signalToString:(uint)index;
 @end

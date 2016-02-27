@@ -320,6 +320,11 @@
    return [_signalToString allValues];
 }
 
+-(NSString*)signalToString:(uint)index
+{
+   return [_signalToString objectForKey:[NSNumber numberWithInt:index]];
+}
+
 -(void)addDelegate:(id<MercuryInstrumentDelegate>)delegate
 {
    [delegates addObject:delegate];
