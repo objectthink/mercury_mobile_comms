@@ -106,6 +106,7 @@ typedef enum
 @property (nonatomic) MercuryAccess access;
 @property (strong, nonatomic)NSString* host;
 @property (strong, nonatomic)GCDAsyncSocket* socket;
+@property NSDictionary<NSNumber*, NSString*>* _signalToString;
 
 -(instancetype)init;
 
@@ -128,5 +129,6 @@ typedef enum
 -(void)addDelegate:(id<MercuryInstrumentDelegate>) delegate;
 -(void)removeDelegate:(id<MercuryInstrumentDelegate>) delegate;
 -(NSArray*)knownSignalNames;
+-(NSArray*)knownSignalKeys;
 -(NSString*)signalToString:(uint)index;
 @end

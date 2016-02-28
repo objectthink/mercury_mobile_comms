@@ -267,7 +267,7 @@
    NSMutableArray* delegates;
    uint _sequenceNumber;
    
-   NSDictionary* _signalToString;
+   //NSDictionary* _signalToString;
    NSMutableDictionary* _commandsInProgress;
 }
 
@@ -275,7 +275,7 @@
 {
    if ([super init])
    {
-      _signalToString =
+      self._signalToString =
       @{
         [NSNumber numberWithInt:IdHeaterADC] : @"IdHeaterADC",
         [NSNumber numberWithInt:IdHeaterMV] : @"IdHeaterMV",
@@ -317,12 +317,17 @@
 
 -(NSArray*)knownSignalNames
 {
-   return [_signalToString allValues];
+   return [self._signalToString allValues];
+}
+
+-(NSArray*)knownSignalKeys
+{
+   return [self._signalToString allKeys];
 }
 
 -(NSString*)signalToString:(uint)index
 {
-   return [_signalToString objectForKey:[NSNumber numberWithInt:index]];
+   return [self._signalToString objectForKey:[NSNumber numberWithInt:index]];
 }
 
 -(void)addDelegate:(id<MercuryInstrumentDelegate>)delegate
@@ -676,6 +681,11 @@
       if ([typeAsString isEqualToString:@"STAT"])
       {
          uint subcommand = [self uintAtOffset:12 inData:data];
+         
+         //FIXUP MESSAGE SO THAT WE CAN USE ENUM TO INDEX INTO
+         //SIGNALS RETURNED IN STATUS
+         message = [NSData dataWithBytes:[data bytes]+8 length:[self uintAtOffset:4 inData:data]];
+
          
          for (id<MercuryInstrumentDelegate> d in delegates)
          {
