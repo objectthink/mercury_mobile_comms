@@ -543,13 +543,21 @@
 
 -(void)sendCommand:(MercuryCommand*)command onCompletion:(void (^)(MercuryResponse*))completionBlock
 {
+   @synchronized(self)
+   {
+      _sequenceNumber = _sequenceNumber + 1;
+      [self sendCommandImpl:command onCompletion:completionBlock];
+   }
+}
+
+-(void)sendCommandImpl:(MercuryCommand*)command onCompletion:(void (^)(MercuryResponse*))completionBlock
+{
    __block MercuryResponse* _response;
-   
-   _sequenceNumber++;
+   __block uint sNumber = _sequenceNumber;
    
    NSMutableData* message = [[NSMutableData alloc]init];
    
-   uint length = (uint)[[command getBytes] length];   //(uint)[command.bytes length];
+   uint length = (uint)[[command getBytes] length];
    
    uint action = 0x4E544341;
    uint get = 0x20544547;
@@ -577,6 +585,8 @@
 
       [_commandsInProgress setObject:d forKey:[NSNumber numberWithInt:_sequenceNumber]];
 
+      NSLog(@"SENDCOMMAND: ABOUT TO WAIT FOR RESPONSE: %d", _sequenceNumber);
+      
       dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
       dispatch_async(queue,
       ^{
@@ -590,8 +600,6 @@
          [self.socket writeData:message withTimeout:-1 tag:0];
          [self.socket readDataToData:[NSData dataWithBytes:"END " length:4] withTimeout:-1 tag:0];
          
-         NSLog(@"SENDCOMMAND: ABOUT TO WAIT FOR RESPONSE: %d", _sequenceNumber);
-         
          [event waitForSignal];
                         
           _response = [d objectForKey:@"Response"];
@@ -599,7 +607,7 @@
          if(completionBlock != nil)
             completionBlock(_response);
          
-         [_commandsInProgress removeObjectForKey:[NSNumber numberWithInt:_sequenceNumber]];
+         [_commandsInProgress removeObjectForKey:[NSNumber numberWithInt:sNumber]];
       });
    }
    else
@@ -637,7 +645,15 @@
 	NSLog(@"socket:%p didWriteDataWithTag:%ld", sock, tag);
 }
 
-- (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag
+-(void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag
+{
+   @synchronized(self)
+   {
+      [self socketImpl:sock didReadData:data withTag:tag];
+   }
+}
+
+-(void)socketImpl:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag
 {
    //////////////////////////////
    NSInputStream* inputStream = [NSInputStream inputStreamWithData:data];
@@ -687,7 +703,8 @@
          message = [NSData dataWithBytes:[data bytes]+8 length:[self uintAtOffset:4 inData:data]];
 
          
-         for (id<MercuryInstrumentDelegate> d in delegates)
+         id delegatesCopy = delegates.copy;
+         for (id<MercuryInstrumentDelegate> d in delegatesCopy)
          {
             [d stat:message withSubcommand:subcommand];
          }
@@ -704,7 +721,8 @@
 //            [event signal];
 //         }
 
-         for (id<MercuryInstrumentDelegate> delegate in delegates)
+         id delegatesCopy = delegates.copy;
+         for (id<MercuryInstrumentDelegate> delegate in delegatesCopy)
          {
             [delegate ackWithSequenceNumber:sequenceNumber];
          }
@@ -725,7 +743,8 @@
             [event signal];
          }
          
-         for (id<MercuryInstrumentDelegate> delegate in delegates)
+         id delegatesCopy = delegates.copy;
+         for (id<MercuryInstrumentDelegate> delegate in delegatesCopy)
          {
             [delegate nakWithSequenceNumber:sequenceNumer andError:errorCode];
          }
@@ -744,7 +763,9 @@
          if( (datalength - 16) > 0)
             message = [NSData dataWithBytes:[data bytes]+24 length:datalength - 16];
          
-         for (id<MercuryInstrumentDelegate> delegate in delegates)
+         id delegatesCopy = delegates.copy;
+         for (id<MercuryInstrumentDelegate> delegate in delegatesCopy)
+            
          {
             [delegate           response:message
                       withSequenceNumber:sequenceNumber
