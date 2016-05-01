@@ -107,6 +107,7 @@ typedef enum
 @property (strong, nonatomic)NSString* host;
 @property (strong, nonatomic)GCDAsyncSocket* socket;
 @property NSDictionary<NSNumber*, NSString*>* _signalToString;
+@property BOOL isTrios;
 
 -(instancetype)init;
 
